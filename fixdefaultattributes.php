@@ -187,9 +187,8 @@ class Fixdefaultattributes extends Module
             StockAvailable::synchronize($id_product);
             return $this->displayConfirmation($this->l('Fix product Default Combination.'));
         }
-        return $this->displayError($this->l('Nothing'));
+        return $this->displayError($this->l('Please set the product ID or enabled the \"Update all product\"'));
     }
-
 
     public function updateAll()
     {
@@ -198,26 +197,5 @@ class Fixdefaultattributes extends Module
             Product::updateDefaultAttribute($key['id_product']);
         }
         return $this->displayConfirmation($this->l('fix all Products default combinations successfully.'));
-    }
-
-    public function getProductQuantityFromProductTables($id_product)
-    {
-        if ($id_product == null) {
-            return;
-        }
-
-        //if (!Combination::isFeatureActive()) {
-        //    return array();
-        //}
-
-        $product = new Product ($id_product);
-        $hasCombination = Product::hascombination();
-        if ($hasCombination == true) {
-            // Product Have combination
-
-        } else {
-            //Simple Product
-
-        }
     }
 }
