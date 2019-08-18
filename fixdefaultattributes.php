@@ -183,8 +183,9 @@ class Fixdefaultattributes extends Module
             return $this->updateAll();
         } elseif (intval(Tools::getValue('FIXDEFAULTATTRIBUTES_PRODUCT_ID')) != null) {
             $id_product = intval(Tools::getValue('FIXDEFAULTATTRIBUTES_PRODUCT_ID'));
-            Product::updateDefaultAttribute($id_product);
-            StockAvailable::synchronize($id_product);
+			$this->updateDefaultAttribute($id_product);
+			StockAvailable::synchronize($id_product);
+			
             return $this->displayConfirmation($this->l('Fix product Default Combination.'));
         }
         return $this->displayError($this->l('Please set the product ID or enabled the \"Update all product\"'));
@@ -198,4 +199,32 @@ class Fixdefaultattributes extends Module
         }
         return $this->displayConfirmation($this->l('fix all Products default combinations successfully.'));
     }
+	
+	public function updateDefaultAttribute($id_product)
+	{
+		//$id_default = Product::getDefaultAttribute($id_product);
+		
+		//$result = Db::getInstance()->ExecuteS("SELECT `id_product_attribute` FROM `ps_product_attribute` WHERE `id_product` = " . $id_product . " ORDER BY `quantity` DESC");
+		$result = Db::getInstance()->ExecuteS('
+			SELECT pa.id_product_attribute FROM ' . _DB_PREFIX_ . 'product_attribute pa
+            LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON (sa.id_product_attribute = pa.id_product_attribute)
+            WHERE pa.id_product=' . $id_product . ' AND sa.quantity > 0 ORDER BY sa.quantity DESC
+			');
+		
+
+
+						
+		if (count($result) > 0) {
+			$id_default = $result[0]['id_product_attribute'];
+			
+			Db::getInstance()->Execute("UPDATE `" . _DB_PREFIX_ . "product_attribute` SET `default_on` = null WHERE `id_product` = " . $id_product);
+			Db::getInstance()->Execute("UPDATE `" . _DB_PREFIX_ . "product_attribute` SET `default_on` = '1' WHERE `id_product_attribute` = " . $id_default . " AND `id_product` = " . $id_product);
+			
+			Db::getInstance()->Execute("UPDATE `" . _DB_PREFIX_ . "product_attribute_shop` SET `default_on` = null WHERE `id_product` = " . $id_product);
+			Db::getInstance()->Execute("UPDATE `" . _DB_PREFIX_ . "product_attribute_shop` SET `default_on` = '1' WHERE `id_product_attribute` = " . $id_default . " AND `id_product` = " . $id_product);
+			
+			Db::getInstance()->Execute("UPDATE `" . _DB_PREFIX_ . "product` SET `cache_default_attribute` = '" . $id_default . "' WHERE `id_product` = " . $id_product);
+			Db::getInstance()->Execute("UPDATE `" . _DB_PREFIX_ . "product_shop` SET `cache_default_attribute` = '" . $id_default . "' WHERE `id_product` = " . $id_product);
+		}
+	}
 }
